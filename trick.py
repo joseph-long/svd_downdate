@@ -62,6 +62,7 @@ def truncated_svd(mtx_x, n_singular_vals):
 
 
 def downdate(mtx_u, diag_s, mtx_v, col_data_to_remove, col_idxs_to_remove):
+    '''returns new_mtx_u, new_diag_s, new_mtx_v'''
     dim_p, dim_q = mtx_u.shape[0], mtx_v.shape[0]
     dim_r = len(diag_s)
     assert mtx_u.shape[1] == dim_r
@@ -75,7 +76,7 @@ def downdate(mtx_u, diag_s, mtx_v, col_data_to_remove, col_idxs_to_remove):
     mtx_b[col_idxs_to_remove, np.arange(dim_c)] = 1
 
     # Compute P to augment U and [[U^T A], [R_A]]
-    mtx_a_orth_u = (np.eye(dim_p) - mtx_u @ mtx_u.T) @ mtx_a
+    mtx_a_orth_u = mtx_a - mtx_u @ (mtx_u.T @ mtx_a)
     mtx_p, temp_r = np.linalg.qr(mtx_a_orth_u)
     mtx_ra = mtx_p.T @ mtx_a_orth_u
     dim_d = mtx_p.shape[1]
@@ -85,7 +86,7 @@ def downdate(mtx_u, diag_s, mtx_v, col_data_to_remove, col_idxs_to_remove):
     mtx_uta_ra = np.vstack([mtx_uta, mtx_ra])
 
     # Compute Q to augment V and [[V^T B], [R_B]]
-    mtx_b_orth_v = (np.eye(dim_q) - mtx_v @ mtx_v.T) @ mtx_b
+    mtx_b_orth_v = mtx_b - mtx_v @ (mtx_v.T @ mtx_b)
     mtx_q, temp_r = np.linalg.qr(mtx_b_orth_v)
     mtx_rb = mtx_q.T @ mtx_b_orth_v
     dim_f = mtx_q.shape[1]
@@ -105,13 +106,13 @@ def downdate(mtx_u, diag_s, mtx_v, col_data_to_remove, col_idxs_to_remove):
     # mtx_k = np.diag(diag_s) + mtx_uta @ mtx_vtb.T
 
     # Smaller (dimension r x r) SVD
-    mtx_uprime, diag_sprime, mtx_vprimet = np.linalg.svd(mtx_k)
+    mtx_uprime, diag_sprime, mtx_vprimet = np.linalg.svd(mtx_k, full_matrices=False)
     mtx_vprime = mtx_vprimet.T
 
     # update SVD
     new_mtx_u = mtx_u_p @ mtx_uprime
     new_diag_s = diag_sprime
-    new_mtx_v = (mtx_v_q @ mtx_vprime).T
+    new_mtx_v = mtx_v_q @ mtx_vprime
     # possible optimization
     # new_mtx_u = mtx_u @ mtx_uprime
     # new_diag_s = diag_sprime
@@ -119,6 +120,7 @@ def downdate(mtx_u, diag_s, mtx_v, col_data_to_remove, col_idxs_to_remove):
     return new_mtx_u, new_diag_s, new_mtx_v
 
 def minimal_downdate(mtx_u, diag_s, mtx_v, col_data_to_remove, col_idxs_to_remove):
+    '''returns new_mtx_u, new_diag_s, new_mtx_v'''
     dim_p, dim_q = mtx_u.shape[0], mtx_v.shape[0]
     dim_r = len(diag_s)
     assert mtx_u.shape[1] == dim_r
@@ -151,11 +153,13 @@ def minimal_downdate(mtx_u, diag_s, mtx_v, col_data_to_remove, col_idxs_to_remov
     # Smaller (dimension r x r) SVD to re-diagonalize, giving
     # rotations of the left and right singular vectors and
     # updated singular values
-    mtx_uprime, diag_sprime, mtx_vprimet = np.linalg.svd(mtx_k)  # K is r x r, O(r^3)
+    mtx_uprime, diag_sprime, mtx_vprimet = np.linalg.svd(mtx_k, full_matrices=False)  # K is r x r, O(r^3)
     mtx_vprime = mtx_vprimet.T
 
     # Compute new SVD by applying the rotations
     new_mtx_u = mtx_u @ mtx_uprime
     new_diag_s = diag_sprime
-    new_mtx_v = (mtx_v @ mtx_vprime).T
+    new_mtx_v = mtx_v @ mtx_vprime
+    # columns of X become rows of V, delete the dropped ones
+    # new_mtx_v = np.delete(new_mtx_v, col_idxs_to_remove, axis=0)
     return new_mtx_u, new_diag_s, new_mtx_v

@@ -27,7 +27,7 @@ def test_downdate():
     # X with columns zeroed for comparison
     final_mtx_x = mtx_x.copy()
     final_mtx_x[:,col_idxs_to_remove] = 0
-    np.allclose(new_mtx_u @ np.diag(new_diag_s) @ new_mtx_v, final_mtx_x)
+    assert np.allclose(new_mtx_u @ np.diag(new_diag_s) @ new_mtx_v.T, final_mtx_x)
 
     # SVD of final matrix for comparison
     final_mtx_u, final_diag_s, final_mtx_vt = np.linalg.svd(final_mtx_x)
@@ -68,7 +68,7 @@ def test_minimal_downdate():
     # X with columns zeroed for comparison
     final_mtx_x = mtx_x.copy()
     final_mtx_x[:,col_idxs_to_remove] = 0
-    np.allclose(new_mtx_u @ np.diag(new_diag_s) @ new_mtx_v, final_mtx_x)
+    assert np.allclose(new_mtx_u @ np.diag(new_diag_s) @ new_mtx_v.T, final_mtx_x)
 
     # SVD of final matrix for comparison
     final_mtx_u, final_diag_s, final_mtx_vt = np.linalg.svd(final_mtx_x)
